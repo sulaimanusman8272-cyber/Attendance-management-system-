@@ -31,8 +31,8 @@ const getCourses = async (req, res) => {
         let result;
         if (role === 'teacher') {
             result = await pool.query(
-                'SELECT * FROM courses WHERE institution_id = $1 AND teacher_id = $2',
-                [institution_id, user_id]
+                'SELECT * FROM courses WHERE institution_id = $1',
+                [institution_id]
             );
         } else if (role === 'student') {
             result = await pool.query(

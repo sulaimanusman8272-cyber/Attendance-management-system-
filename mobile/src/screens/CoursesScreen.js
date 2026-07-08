@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  ActivityIndicator, RefreshControl
+  ActivityIndicator, RefreshControl, StatusBar
 } from 'react-native';
 import api from '../api/axios';
 
@@ -24,109 +24,106 @@ export default function CoursesScreen() {
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1a73e8" />
+        <ActivityIndicator size="large" color="#009688" />
+        <Text style={styles.loadingText}>Loading courses...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor="#004d40" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Courses</Text>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{courses.length}</Text>
+        </View>
+      </View>
+
       <FlatList
         data={courses}
         keyExtractor={item => item.id.toString()}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCourses(); }} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCourses(); }} tintColor="#009688" />
+        }
+        contentContainerStyle={{ padding: 16, paddingTop: 12 }}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyText}>You are not enrolled in any courses yet.</Text>
+            <Text style={styles.emptyIcon}>📚</Text>
+            <Text style={styles.emptyTitle}>No Courses Found</Text>
+            <Text style={styles.emptyText}>You are not enrolled in any courses yet. Contact your admin.</Text>
           </View>
         }
         renderItem={({ item, index }) => (
           <View style={styles.card}>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.code}</Text>
+            <View style={styles.cardLeft}>
+              <View style={styles.indexBadge}>
+                <Text style={styles.indexText}>{index + 1}</Text>
+              </View>
             </View>
-            <View style={styles.info}>
+            <View style={styles.cardBody}>
               <Text style={styles.courseName}>{item.name}</Text>
-              <Text style={styles.courseCode}>Course #{item.id}</Text>
+              <Text style={styles.courseCode}>{item.code}</Text>
             </View>
-            <View style={styles.number}>
-              <Text style={styles.numberText}>{index + 1}</Text>
+            <View style={styles.cardRight}>
+              <View style={styles.codePill}>
+                <Text style={styles.codePillText}>{item.code}</Text>
+              </View>
             </View>
           </View>
         )}
-        contentContainerStyle={{ padding: 16 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5',
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  container: { flex: 1, backgroundColor: '#f0f4f4' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loadingText: { color: '#78909c', fontSize: 14 },
+  header: {
+    backgroundColor: '#004d40',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
+    justifyContent: 'space-between',
   },
-  badge: {
-    backgroundColor: '#e8f0fe',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 14,
+  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  countBadge: {
+    backgroundColor: '#009688', borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 4,
   },
-  badgeText: {
-    color: '#1a73e8',
-    fontWeight: '700',
-    fontSize: 12,
+  countText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  card: {
+    backgroundColor: '#fff', borderRadius: 14, padding: 16,
+    flexDirection: 'row', alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
   },
-  info: {
-    flex: 1,
+  cardLeft: { marginRight: 14 },
+  indexBadge: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#e0f2f1',
+    justifyContent: 'center', alignItems: 'center',
   },
-  courseName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
+  indexText: { color: '#009688', fontWeight: '800', fontSize: 14 },
+  cardBody: { flex: 1 },
+  courseName: { fontSize: 15, fontWeight: '700', color: '#263238', marginBottom: 3 },
+  courseCode: { fontSize: 12, color: '#78909c' },
+  cardRight: {},
+  codePill: {
+    backgroundColor: '#e0f2f1', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 4,
   },
-  courseCode: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
-  number: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#f0f2f5',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  numberText: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '600',
-  },
-  empty: {
-    alignItems: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    color: '#aaa',
-    fontSize: 14,
-    textAlign: 'center',
-  },
+  codePillText: { color: '#00796b', fontWeight: '700', fontSize: 11 },
+  empty: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 30 },
+  emptyIcon: { fontSize: 56, marginBottom: 16 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: '#37474f', marginBottom: 8 },
+  emptyText: { fontSize: 14, color: '#90a4ae', textAlign: 'center', lineHeight: 20 },
 });

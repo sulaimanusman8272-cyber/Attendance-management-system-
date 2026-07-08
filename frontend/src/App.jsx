@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -12,11 +12,23 @@ import Students from './pages/Students';
 import Reports from './pages/Reports';
 
 function AppLayout({ children }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="layout">
-      <Sidebar />
+      {/* Mobile overlay */}
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
       <div className="main-wrapper">
-        <TopBar />
+        <TopBar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         <main className="main-content">
           {children}
         </main>
@@ -30,13 +42,13 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/login"     element={<Login />} />
           <Route path="/dashboard" element={<PrivateRoute><AppLayout><Dashboard /></AppLayout></PrivateRoute>} />
           <Route path="/courses"   element={<PrivateRoute><AppLayout><Courses /></AppLayout></PrivateRoute>} />
           <Route path="/sessions"  element={<PrivateRoute><AppLayout><Sessions /></AppLayout></PrivateRoute>} />
           <Route path="/students"  element={<PrivateRoute><AppLayout><Students /></AppLayout></PrivateRoute>} />
           <Route path="/reports"   element={<PrivateRoute><AppLayout><Reports /></AppLayout></PrivateRoute>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*"          element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

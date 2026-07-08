@@ -10,17 +10,27 @@ const navItems = [
   { to: '/reports',   icon: '◈', label: 'Reports',    roles: ['admin','teacher'] },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, onClose }) {
   const { user } = useAuth();
   if (!user) return null;
 
   const allowed = navItems.filter(n => n.roles.includes(user.role));
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
       <div className="sidebar-brand">
-        <h2>Attendance<br/>Management</h2>
-        <span>System</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <h2>Attendance<br/>Management</h2>
+            <span>System</span>
+          </div>
+          {/* Close button — mobile only */}
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)',
+            fontSize: '1.4rem', cursor: 'pointer', lineHeight: 1,
+            display: 'block'
+          }}>×</button>
+        </div>
       </div>
 
       <nav className="sidebar-nav">
@@ -29,6 +39,7 @@ export default function Sidebar() {
           <NavLink
             key={item.to}
             to={item.to}
+            onClick={onClose}
             className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
           >
             <span className="nav-icon">{item.icon}</span>

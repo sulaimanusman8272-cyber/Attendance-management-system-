@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, FlatList, StyleSheet,
-  ActivityIndicator, RefreshControl, TouchableOpacity
+  ActivityIndicator, RefreshControl, TouchableOpacity, ScrollView, StatusBar
 } from 'react-native';
 import api from '../api/axios';
+import { useAuth } from '../context/AuthContext';
 
 export default function AttendanceScreen() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [report, setReport] = useState(null);
+  const [report, setReport] = useState([]);
+  const [myRecord, setMyRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -29,192 +32,193 @@ export default function AttendanceScreen() {
     try {
       const res = await api.get(`/reports/course/${course.id}/attendance`);
       setReport(res.data.report);
-    } catch (_) {
-      setReport([]);
-    }
+      const me = res.data.report.find(r => r.student_id === user?.id);
+      setMyRecord(me || res.data.report[0] || null);
+    } catch { setReport([]); setMyRecord(null); }
   };
 
   useEffect(() => { fetchCourses(); }, []);
   useEffect(() => { if (selectedCourse) fetchReport(selectedCourse); }, [selectedCourse]);
 
+  const getPctColor = (pct) => {
+    if (pct >= 75) return '#009688';
+    if (pct >= 50) return '#ffa726';
+    return '#ef5350';
+  };
+
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1a73e8" />
+        <ActivityIndicator size="large" color="#009688" />
+        <Text style={{ color: '#78909c', marginTop: 10 }}>Loading...</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {/* Course Selector */}
-      <View style={styles.courseSelector}>
-        <FlatList
-          data={courses}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={item => item.id.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.courseChip,
-                selectedCourse?.id === item.id && styles.courseChipActive
-              ]}
-              onPress={() => setSelectedCourse(item)}
-            >
-              <Text style={[
-                styles.courseChipText,
-                selectedCourse?.id === item.id && styles.courseChipTextActive
-              ]}>
-                {item.code}
-              </Text>
-            </TouchableOpacity>
-          )}
-          contentContainerStyle={{ padding: 12, gap: 8 }}
-        />
+      <StatusBar barStyle="light-content" backgroundColor="#004d40" />
+
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Attendance</Text>
+        <Text style={styles.headerSub}>Track your attendance per course</Text>
       </View>
 
-      {/* My Attendance Stats */}
-      {report && report.length > 0 && selectedCourse && (() => {
-        // Find current user's record (we'll show all since API returns all students)
-        const myRecord = report[0]; // Simplified - shows first record
-        return (
-          <View style={styles.statsCard}>
-            <Text style={styles.statsTitle}>{selectedCourse.name}</Text>
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statNum}>{myRecord?.total_sessions || 0}</Text>
-                <Text style={styles.statLabel}>Total Sessions</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.statItem}>
-                <Text style={styles.statNum}>{myRecord?.attended_sessions || 0}</Text>
-                <Text style={styles.statLabel}>Attended</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={[styles.statItem]}>
-                <Text style={[
-                  styles.statNum,
-                  { color: (myRecord?.attendance_percentage || 0) >= 75 ? '#2e7d32' : '#e53935' }
-                ]}>
-                  {myRecord?.attendance_percentage || 0}%
+      {/* Course Pills */}
+      {courses.length > 0 && (
+        <View style={styles.pillsWrapper}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pills}>
+            {courses.map(c => (
+              <TouchableOpacity
+                key={c.id}
+                style={[styles.pill, selectedCourse?.id === c.id && styles.pillActive]}
+                onPress={() => setSelectedCourse(c)}
+              >
+                <Text style={[styles.pillText, selectedCourse?.id === c.id && styles.pillTextActive]}>
+                  {c.code}
                 </Text>
-                <Text style={styles.statLabel}>Attendance</Text>
-              </View>
-            </View>
-            {/* Progress bar */}
-            <View style={styles.progressBg}>
-              <View style={[
-                styles.progressFill,
-                {
-                  width: `${myRecord?.attendance_percentage || 0}%`,
-                  backgroundColor: (myRecord?.attendance_percentage || 0) >= 75 ? '#2e7d32' : '#e53935'
-                }
-              ]} />
-            </View>
-            {(myRecord?.attendance_percentage || 0) < 75 && (
-              <Text style={styles.warningText}>
-                Warning: Attendance below 75%. You are a defaulter.
-              </Text>
-            )}
-          </View>
-        );
-      })()}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
-      {/* All Student Records */}
-      <Text style={styles.sectionTitle}>All Students</Text>
+      {/* My Stats Card */}
+      {myRecord && selectedCourse && (
+        <View style={styles.statsCard}>
+          <Text style={styles.statsTitle}>{selectedCourse.name}</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{myRecord.total_sessions}</Text>
+              <Text style={styles.statLabel}>Total</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>{myRecord.attended_sessions}</Text>
+              <Text style={styles.statLabel}>Attended</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={[styles.statNum, { color: getPctColor(myRecord.attendance_percentage) }]}>
+                {myRecord.attendance_percentage}%
+              </Text>
+              <Text style={styles.statLabel}>Score</Text>
+            </View>
+          </View>
+
+          {/* Progress bar */}
+          <View style={styles.progressBg}>
+            <View style={[styles.progressFill, {
+              width: `${myRecord.attendance_percentage}%`,
+              backgroundColor: getPctColor(myRecord.attendance_percentage)
+            }]} />
+          </View>
+
+          {myRecord.attendance_percentage < 75 && (
+            <View style={styles.warningBox}>
+              <Text style={styles.warningText}>⚠ Below 75% — You are a defaulter</Text>
+            </View>
+          )}
+        </View>
+      )}
+
+      {/* All Students */}
+      <Text style={styles.listTitle}>All Students</Text>
       <FlatList
-        data={report || []}
+        data={report}
         keyExtractor={item => item.student_id.toString()}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); fetchCourses(); }}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchCourses(); }} tintColor="#009688" />
         }
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
         ListEmptyComponent={
-          <View style={styles.center}>
-            <Text style={styles.emptyText}>No attendance data available.</Text>
+          <View style={styles.empty}>
+            <Text style={{ fontSize: 40 }}>📊</Text>
+            <Text style={styles.emptyText}>No attendance data yet.</Text>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.recordCard}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+          <View style={styles.studentCard}>
+            <View style={styles.studentAvatar}>
+              <Text style={styles.studentAvatarText}>{item.name.charAt(0).toUpperCase()}</Text>
             </View>
-            <View style={styles.recordInfo}>
-              <Text style={styles.recordName}>{item.name}</Text>
-              <Text style={styles.recordEmail}>{item.email}</Text>
-              <View style={styles.progressBg}>
-                <View style={[
-                  styles.progressFill,
-                  {
-                    width: `${item.attendance_percentage}%`,
-                    backgroundColor: item.attendance_percentage >= 75 ? '#2e7d32' : '#e53935'
-                  }
-                ]} />
+            <View style={styles.studentInfo}>
+              <Text style={styles.studentName}>{item.name}</Text>
+              <View style={styles.miniBar}>
+                <View style={[styles.miniBarFill, {
+                  width: `${item.attendance_percentage}%`,
+                  backgroundColor: getPctColor(item.attendance_percentage)
+                }]} />
               </View>
             </View>
-            <View style={[
-              styles.pctBadge,
-              { backgroundColor: item.attendance_percentage >= 75 ? '#e8f5e9' : '#fdecea' }
-            ]}>
-              <Text style={[
-                styles.pctText,
-                { color: item.attendance_percentage >= 75 ? '#2e7d32' : '#e53935' }
-              ]}>
+            <View style={[styles.pctPill, { backgroundColor: getPctColor(item.attendance_percentage) + '20' }]}>
+              <Text style={[styles.pctText, { color: getPctColor(item.attendance_percentage) }]}>
                 {item.attendance_percentage}%
               </Text>
             </View>
           </View>
         )}
-        contentContainerStyle={{ padding: 16, paddingTop: 8 }}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f0f2f5' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  courseSelector: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#eee' },
-  courseChip: {
-    paddingHorizontal: 16, paddingVertical: 8,
-    borderRadius: 20, backgroundColor: '#f0f2f5',
-    borderWidth: 1, borderColor: '#ddd',
+  container: { flex: 1, backgroundColor: '#f0f4f4' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  header: {
+    backgroundColor: '#004d40',
+    paddingTop: 50, paddingBottom: 24, paddingHorizontal: 20,
+    borderBottomLeftRadius: 24, borderBottomRightRadius: 24,
   },
-  courseChipActive: { backgroundColor: '#1a73e8', borderColor: '#1a73e8' },
-  courseChipText: { fontSize: 13, fontWeight: '600', color: '#555' },
-  courseChipTextActive: { color: '#fff' },
+  headerTitle: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  headerSub: { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 3 },
+  pillsWrapper: { backgroundColor: '#fff', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#eceff1' },
+  pills: { paddingHorizontal: 16, gap: 8 },
+  pill: {
+    paddingHorizontal: 16, paddingVertical: 7,
+    borderRadius: 20, backgroundColor: '#f0f4f4',
+    borderWidth: 1.5, borderColor: '#cfd8dc',
+  },
+  pillActive: { backgroundColor: '#009688', borderColor: '#009688' },
+  pillText: { fontSize: 13, fontWeight: '700', color: '#546e7a' },
+  pillTextActive: { color: '#fff' },
   statsCard: {
-    backgroundColor: '#fff', margin: 16, borderRadius: 12,
-    padding: 18, shadowColor: '#000', shadowOpacity: 0.06,
-    shadowRadius: 6, elevation: 2,
+    backgroundColor: '#fff', margin: 16, borderRadius: 16, padding: 20,
+    shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
   },
-  statsTitle: { fontSize: 15, fontWeight: '700', color: '#333', marginBottom: 14 },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 14 },
+  statsTitle: { fontSize: 15, fontWeight: '700', color: '#263238', marginBottom: 16 },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
   statItem: { alignItems: 'center' },
-  statNum: { fontSize: 24, fontWeight: '800', color: '#1a73e8' },
-  statLabel: { fontSize: 11, color: '#888', marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: '#eee' },
-  progressBg: { backgroundColor: '#eee', borderRadius: 4, height: 8, overflow: 'hidden' },
-  progressFill: { height: 8, borderRadius: 4 },
-  warningText: { color: '#e53935', fontSize: 12, marginTop: 8, fontWeight: '600' },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: '#888', paddingHorizontal: 16, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-  recordCard: {
-    backgroundColor: '#fff', borderRadius: 10, padding: 14,
-    marginBottom: 10, flexDirection: 'row', alignItems: 'center',
-    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+  statNum: { fontSize: 28, fontWeight: '900', color: '#009688' },
+  statLabel: { fontSize: 11, color: '#90a4ae', marginTop: 2, fontWeight: '600' },
+  statDivider: { width: 1, backgroundColor: '#eceff1' },
+  progressBg: { backgroundColor: '#eceff1', borderRadius: 6, height: 10, overflow: 'hidden' },
+  progressFill: { height: 10, borderRadius: 6 },
+  warningBox: {
+    backgroundColor: '#fdecea', borderRadius: 8, padding: 10, marginTop: 12,
+    borderLeftWidth: 3, borderLeftColor: '#ef5350',
   },
-  avatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#e8f0fe', justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  warningText: { color: '#c62828', fontSize: 12, fontWeight: '700' },
+  listTitle: { fontSize: 12, fontWeight: '700', color: '#78909c', paddingHorizontal: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 1 },
+  studentCard: {
+    backgroundColor: '#fff', borderRadius: 12, padding: 14,
+    flexDirection: 'row', alignItems: 'center', marginBottom: 8,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
   },
-  avatarText: { color: '#1a73e8', fontWeight: '700', fontSize: 16 },
-  recordInfo: { flex: 1, marginRight: 10 },
-  recordName: { fontSize: 14, fontWeight: '700', color: '#333' },
-  recordEmail: { fontSize: 11, color: '#888', marginBottom: 6 },
-  pctBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
+  studentAvatar: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: '#e0f2f1',
+    justifyContent: 'center', alignItems: 'center', marginRight: 12,
+  },
+  studentAvatarText: { color: '#009688', fontWeight: '800', fontSize: 15 },
+  studentInfo: { flex: 1, marginRight: 10 },
+  studentName: { fontSize: 14, fontWeight: '700', color: '#263238', marginBottom: 6 },
+  miniBar: { backgroundColor: '#eceff1', borderRadius: 4, height: 5, overflow: 'hidden' },
+  miniBarFill: { height: 5, borderRadius: 4 },
+  pctPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   pctText: { fontSize: 13, fontWeight: '800' },
-  emptyText: { color: '#aaa', fontSize: 14 },
+  empty: { alignItems: 'center', paddingTop: 40, gap: 10 },
+  emptyText: { color: '#90a4ae', fontSize: 14 },
 });

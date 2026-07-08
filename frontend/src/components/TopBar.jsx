@@ -3,14 +3,13 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import LogoutModal from './LogoutModal';
 
-export default function TopBar() {
+export default function TopBar({ onMenuToggle }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
   const ref = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handler = e => { if (ref.current && !ref.current.contains(e.target)) setDropdownOpen(false); };
     document.addEventListener('mousedown', handler);
@@ -28,9 +27,21 @@ export default function TopBar() {
   return (
     <>
       <header className="topbar">
-        <div className="topbar-left">
-          <span className="topbar-greeting">Good day, <strong>{user.name}</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Hamburger — mobile only */}
+          <button className="hamburger-btn" onClick={onMenuToggle} style={{
+            display: 'none',
+            background: 'none', border: 'none',
+            cursor: 'pointer', padding: '4px 6px',
+            fontSize: '1.3rem', color: '#546e7a'
+          }}>
+            ☰
+          </button>
+          <span className="topbar-greeting">
+            Good day, <strong>{user.name}</strong>
+          </span>
         </div>
+
         <div className="topbar-right" ref={ref}>
           <button className="topbar-user-btn" onClick={() => setDropdownOpen(!dropdownOpen)}>
             <div className="topbar-avatar">{user.name.charAt(0).toUpperCase()}</div>
@@ -52,7 +63,8 @@ export default function TopBar() {
                 </div>
               </div>
               <div className="dropdown-divider" />
-              <button className="dropdown-item dropdown-logout" onClick={() => { setDropdownOpen(false); setShowLogout(true); }}>
+              <button className="dropdown-item dropdown-logout"
+                onClick={() => { setDropdownOpen(false); setShowLogout(true); }}>
                 <span>↩</span> Logout
               </button>
             </div>
@@ -61,10 +73,7 @@ export default function TopBar() {
       </header>
 
       {showLogout && (
-        <LogoutModal
-          onConfirm={handleLogout}
-          onCancel={() => setShowLogout(false)}
-        />
+        <LogoutModal onConfirm={handleLogout} onCancel={() => setShowLogout(false)} />
       )}
     </>
   );
