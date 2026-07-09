@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,6 +23,10 @@ export default function Login() {
         password: form.password,
         institution_id: parseInt(form.institution_id),
       });
+      if (res.data.user.role === 'student') {
+        setError('Students are not allowed on the web portal. Please use the mobile app.');
+        return;
+      }
       login(res.data.user, res.data.token);
       navigate('/dashboard');
     } catch (err) {
@@ -108,6 +112,13 @@ export default function Login() {
             {loading ? 'Signing in...' : 'Sign In →'}
           </button>
         </form>
+
+        <p style={{ marginTop: 20, textAlign: 'center', fontSize: '0.875rem', color: '#78909c' }}>
+          New institution?{' '}
+          <Link to="/signup" style={{ color: '#009688', fontWeight: 700, textDecoration: 'none' }}>
+            Create Account
+          </Link>
+        </p>
       </div>
     </div>
   );

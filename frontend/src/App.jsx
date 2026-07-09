@@ -5,6 +5,7 @@ import PrivateRoute from './components/PrivateRoute';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import Sessions from './pages/Sessions';
@@ -43,6 +44,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login"     element={<Login />} />
+          <Route path="/signup"    element={<Signup />} />
           <Route path="/dashboard" element={<PrivateRoute><AppLayout><Dashboard /></AppLayout></PrivateRoute>} />
           <Route path="/courses"   element={<PrivateRoute><AppLayout><Courses /></AppLayout></PrivateRoute>} />
           <Route path="/sessions"  element={<PrivateRoute><AppLayout><Sessions /></AppLayout></PrivateRoute>} />
