@@ -11,6 +11,7 @@ export default function Students() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [regForm, setRegForm] = useState({ name: '', email: '', password: '', role: 'student' });
+  const [showModal, setShowModal] = useState(false);
 
   const notify = (msg, isError = false) => {
     if (isError) setError(msg); else setMessage(msg);
@@ -35,9 +36,10 @@ export default function Students() {
         institution_id: user.institution_id,
       });
       notify(`${regForm.role === 'teacher' ? 'Teacher' : 'Student'} "${res.data.user.name}" registered successfully.`);
-      setRegForm({ name: '', email: '', password: '', role: regForm.role });
-      fetchAll();
       setActiveTab(regForm.role === 'teacher' ? 'teachers' : 'students');
+      setRegForm({ name: '', email: '', password: '', role: 'student' });
+      setShowModal(false);
+      fetchAll();
     } catch (err) {
       notify(err.response?.data?.message || 'Registration failed.', true);
     } finally { setLoading(false); }
@@ -81,7 +83,7 @@ export default function Students() {
           <p>Manage students and teachers</p>
         </div>
         {user.role === 'admin' && (
-          <button className="btn btn-primary" onClick={() => setActiveTab('register')}>+ Register User</button>
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>+ Register User</button>
         )}
       </div>
 
@@ -102,43 +104,65 @@ export default function Students() {
       {activeTab === 'students' && renderUserTable(students, 'No students registered yet.')}
       {activeTab === 'teachers' && user.role === 'admin' && renderUserTable(teachers, 'No teachers registered yet.')}
 
-      {activeTab === 'register' && user.role === 'admin' && (
-        <div className="card" style={{ maxWidth: 500 }}>
-          <div className="card-header"><h2>Register New User</h2></div>
-          <form onSubmit={handleRegister}>
-            <div className="form-group">
-              <label>Role</label>
-              <select
-                value={regForm.role}
-                onChange={e => setRegForm({ ...regForm, role: e.target.value })}
-                style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #cfd8dc', borderRadius:10, fontSize:14, color:'#263238', background:'#fafafa' }}
-              >
-                <option value="student">Student</option>
-                <option value="teacher">Teacher</option>
-              </select>
+      {/* Register User Modal */}
+      {showModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+        }} onClick={() => setShowModal(false)}>
+          <div style={{
+            background: '#fff', borderRadius: 16, padding: 32, width: '100%', maxWidth: 460,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)', position: 'relative'
+          }} onClick={e => e.stopPropagation()}>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#263238' }}>Register New User</h2>
+              <button onClick={() => setShowModal(false)} style={{
+                background: 'none', border: 'none', fontSize: '1.4rem', cursor: 'pointer', color: '#90a4ae', lineHeight: 1
+              }}>×</button>
             </div>
-            <div className="form-group">
-              <label>Full Name</label>
-              <input type="text" placeholder="Full name" value={regForm.name}
-                onChange={e => setRegForm({ ...regForm, name: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label>Email Address</label>
-              <input type="email" placeholder="user@university.edu" value={regForm.email}
-                onChange={e => setRegForm({ ...regForm, email: e.target.value })} required />
-            </div>
-            <div className="form-group">
-              <label>Password</label>
-              <input type="password" placeholder="Min 6 characters" value={regForm.password}
-                onChange={e => setRegForm({ ...regForm, password: e.target.value })} required minLength={6} />
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Registering...' : `Register ${regForm.role === 'teacher' ? 'Teacher' : 'Student'}`}
-              </button>
-              <button type="button" className="btn btn-outline" onClick={() => setActiveTab('students')}>Cancel</button>
-            </div>
-          </form>
+
+            {error && <div className="alert alert-error">⚠ {error}</div>}
+
+            <form onSubmit={handleRegister}>
+              <div className="form-group">
+                <label>Role</label>
+                <select
+                  value={regForm.role}
+                  onChange={e => setRegForm({ ...regForm, role: e.target.value })}
+                  style={{
+                    width: '100%', padding: '10px 14px', border: '1.5px solid #009688',
+                    borderRadius: 10, fontSize: 14, color: '#fff',
+                    background: '#009688', cursor: 'pointer', fontWeight: 600
+                  }}
+                >
+                  <option value="student" style={{ background: '#fff', color: '#263238' }}>Student</option>
+                  <option value="teacher" style={{ background: '#fff', color: '#263238' }}>Teacher</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Full Name</label>
+                <input type="text" placeholder="Full name" value={regForm.name}
+                  onChange={e => setRegForm({ ...regForm, name: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Email Address</label>
+                <input type="email" placeholder="user@university.edu" value={regForm.email}
+                  onChange={e => setRegForm({ ...regForm, email: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label>Password</label>
+                <input type="password" placeholder="Min 6 characters" value={regForm.password}
+                  onChange={e => setRegForm({ ...regForm, password: e.target.value })} required minLength={6} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button type="submit" className="btn btn-primary" disabled={loading} style={{ flex: 1 }}>
+                  {loading ? 'Registering...' : `Register ${regForm.role === 'teacher' ? 'Teacher' : 'Student'}`}
+                </button>
+                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
