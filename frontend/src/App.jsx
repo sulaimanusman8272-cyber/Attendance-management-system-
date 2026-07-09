@@ -11,6 +11,7 @@ import Courses from './pages/Courses';
 import Sessions from './pages/Sessions';
 import Students from './pages/Students';
 import Reports from './pages/Reports';
+import Enrollments from './pages/Enrollments';
 
 function AppLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/courses"   element={<PrivateRoute><AppLayout><Courses /></AppLayout></PrivateRoute>} />
           <Route path="/sessions"  element={<PrivateRoute><AppLayout><Sessions /></AppLayout></PrivateRoute>} />
           <Route path="/students"  element={<PrivateRoute><AppLayout><Students /></AppLayout></PrivateRoute>} />
+          <Route path="/enrollments" element={<PrivateRoute><AppLayout><Enrollments /></AppLayout></PrivateRoute>} />
           <Route path="/reports"   element={<PrivateRoute><AppLayout><Reports /></AppLayout></PrivateRoute>} />
           <Route path="*"          element={<Navigate to="/dashboard" replace />} />
         </Routes>
