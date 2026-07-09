@@ -6,7 +6,7 @@ const navItems = [
   { to: '/dashboard', icon: '⊞', label: 'Dashboard',  roles: ['admin','teacher','student'] },
   { to: '/courses',   icon: '◫', label: 'Courses',    roles: ['admin','teacher','student'] },
   { to: '/sessions',  icon: '◉', label: 'Sessions',   roles: ['admin','teacher'] },
-  { to: '/students',  icon: '◎', label: 'Students',   roles: ['admin','teacher'] },
+  { to: '/students',  icon: '◎', label: 'Users',      roles: ['admin','teacher'] },
   { to: '/reports',   icon: '◈', label: 'Reports',    roles: ['admin','teacher'] },
 ];
 

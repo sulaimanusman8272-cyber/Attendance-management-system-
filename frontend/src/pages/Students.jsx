@@ -104,7 +104,7 @@ export default function Students() {
           <p>Manage students and teachers</p>
         </div>
         {user.role === 'admin' && (
-          <button className="btn btn-primary" onClick={() => setActiveTab('register')}>+ Add User</button>
+          <button className="btn btn-primary" onClick={() => setActiveTab('register')}>+ Register User</button>
         )}
       </div>
 
@@ -123,11 +123,6 @@ export default function Students() {
         {user.role === 'admin' && (
           <div className={`tab ${activeTab==='enroll'?'active':''}`} onClick={() => setActiveTab('enroll')}>
             Enroll in Course
-          </div>
-        )}
-        {user.role === 'admin' && (
-          <div className={`tab ${activeTab==='register'?'active':''}`} onClick={() => setActiveTab('register')}>
-            Register User
           </div>
         )}
       </div>
