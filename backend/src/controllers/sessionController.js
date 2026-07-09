@@ -36,13 +36,19 @@ const createSession = async (req, res) => {
     }
 };
 
-// Get all sessions for a course
+// Get all sessions for a course (with teacher name and present count)
 const getSessionsByCourse = async (req, res) => {
     const { course_id } = req.params;
 
     try {
         const result = await pool.query(
-            'SELECT * FROM attendance_sessions WHERE course_id = $1 ORDER BY created_at DESC',
+            `SELECT s.*, u.name AS teacher_name, COUNT(ar.id) AS present_count
+             FROM attendance_sessions s
+             LEFT JOIN users u ON u.id = s.teacher_id
+             LEFT JOIN attendance_records ar ON ar.session_id = s.id
+             WHERE s.course_id = $1
+             GROUP BY s.id, u.name
+             ORDER BY s.created_at DESC`,
             [course_id]
         );
         res.json({ sessions: result.rows });
@@ -51,4 +57,27 @@ const getSessionsByCourse = async (req, res) => {
     }
 };
 
-module.exports = { createSession, getSessionsByCourse };
+// Get all sessions across all courses for admin
+const getAllSessions = async (req, res) => {
+    const { institution_id } = req.user;
+
+    try {
+        const result = await pool.query(
+            `SELECT s.*, c.name AS course_name, c.code AS course_code,
+             u.name AS teacher_name, COUNT(ar.id) AS present_count
+             FROM attendance_sessions s
+             JOIN courses c ON c.id = s.course_id
+             LEFT JOIN users u ON u.id = s.teacher_id
+             LEFT JOIN attendance_records ar ON ar.session_id = s.id
+             WHERE c.institution_id = $1
+             GROUP BY s.id, c.name, c.code, u.name
+             ORDER BY s.created_at DESC`,
+            [institution_id]
+        );
+        res.json({ sessions: result.rows });
+    } catch (err) {
+        res.status(500).json({ message: 'Server error.', error: err.message });
+    }
+};
+
+module.exports = { createSession, getSessionsByCourse, getAllSessions };

@@ -2,8 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import api from '../api/axios';
 import CustomSelect from '../components/CustomSelect';
+import { useAuth } from '../context/AuthContext';
 
 export default function Sessions() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [attendance, setAttendance] = useState([]);
@@ -13,17 +15,24 @@ export default function Sessions() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [activeTab, setActiveTab] = useState('generate');
+  const [activeTab, setActiveTab] = useState(user?.role === 'admin' ? 'history' : 'generate');
   const timerRef = useRef(null);
 
   useEffect(() => {
     api.get('/courses').then(r => setCourses(r.data.courses)).catch(() => {});
+    if (user.role === 'admin') {
+      api.get('/sessions/all').then(r => setSessions(r.data.sessions)).catch(() => {});
+    }
   }, []);
 
   useEffect(() => {
-    if (selectedCourse) {
+    if (selectedCourse && user.role !== 'admin') {
       api.get(`/sessions/course/${selectedCourse}`)
         .then(r => setSessions(r.data.sessions)).catch(() => {});
+    } else if (selectedCourse && user.role === 'admin') {
+      api.get('/sessions/all').then(r => {
+        setSessions(r.data.sessions.filter(s => s.course_id === parseInt(selectedCourse)));
+      }).catch(() => {});
     }
   }, [selectedCourse]);
 
@@ -83,7 +92,9 @@ export default function Sessions() {
       {error   && <div className="alert alert-error">⚠ {error}</div>}
 
       <div className="tabs">
-        <div className={`tab ${activeTab==='generate'?'active':''}`} onClick={()=>setActiveTab('generate')}>Generate QR</div>
+        {user.role === 'teacher' && (
+          <div className={`tab ${activeTab==='generate'?'active':''}`} onClick={()=>setActiveTab('generate')}>Generate QR</div>
+        )}
         <div className={`tab ${activeTab==='history'?'active':''}`} onClick={()=>setActiveTab('history')}>Session History</div>
         {selectedSession && (
           <div className={`tab ${activeTab==='attendance'?'active':''}`} onClick={()=>setActiveTab('attendance')}>
@@ -92,7 +103,7 @@ export default function Sessions() {
         )}
       </div>
 
-      {activeTab === 'generate' && (
+      {activeTab === 'generate' && user.role === 'teacher' && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
           <div className="card">
             <div className="card-header"><h2>Start New Session</h2></div>
@@ -149,7 +160,16 @@ export default function Sessions() {
           <div className="table-wrapper">
             <table>
               <thead>
-                <tr><th>Session ID</th><th>Created At</th><th>Expires At</th><th>Status</th><th>Action</th></tr>
+                <tr>
+                  <th>Session ID</th>
+                  {user.role === 'admin' && <th>Course</th>}
+                  {user.role === 'admin' && <th>Teacher</th>}
+                  <th>Created At</th>
+                  <th>Expires At</th>
+                  <th>Status</th>
+                  <th>Present</th>
+                  <th>Action</th>
+                </tr>
               </thead>
               <tbody>
                 {sessions.map(s => {
@@ -157,9 +177,12 @@ export default function Sessions() {
                   return (
                     <tr key={s.id}>
                       <td style={{ fontWeight:600 }}>#{s.id}</td>
+                      {user.role === 'admin' && <td><span className="badge badge-teal">{s.course_name} {s.course_code && `(${s.course_code})`}</span></td>}
+                      {user.role === 'admin' && <td>{s.teacher_name || '-'}</td>}
                       <td>{new Date(s.created_at).toLocaleString()}</td>
                       <td>{new Date(s.expires_at).toLocaleString()}</td>
                       <td><span className={`badge ${expired?'badge-red':'badge-green'}`}>{expired?'Expired':'Active'}</span></td>
+                      <td><span className="badge badge-teal">{s.present_count || 0}</span></td>
                       <td><button className="btn btn-outline btn-sm" onClick={() => handleViewAttendance(s)}>View Attendance</button></td>
                     </tr>
                   );

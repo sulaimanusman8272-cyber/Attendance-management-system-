@@ -7,15 +7,16 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [courses, setCourses] = useState([]);
   const [summary, setSummary] = useState([]);
+  const [userCounts, setUserCounts] = useState({ students: 0, teachers: 0 });
 
   useEffect(() => {
     api.get('/courses').then(r => setCourses(r.data.courses)).catch(() => {});
     if (user.role === 'admin') {
       api.get('/reports/summary').then(r => setSummary(r.data.summary)).catch(() => {});
+      api.get('/users/counts').then(r => setUserCounts(r.data)).catch(() => {});
     }
   }, [user.role]);
 
-  const totalStudents = summary.reduce((a, c) => a + parseInt(c.total_students || 0), 0);
   const totalSessions = summary.reduce((a, c) => a + parseInt(c.total_sessions || 0), 0);
 
   return (
@@ -38,10 +39,14 @@ export default function Dashboard() {
         {user.role === 'admin' && (
           <>
             <div className="stat-card orange">
-              <div className="stat-number">{totalStudents}</div>
+              <div className="stat-number">{userCounts.students}</div>
               <div className="stat-label">Total Students</div>
             </div>
             <div className="stat-card purple">
+              <div className="stat-number">{userCounts.teachers}</div>
+              <div className="stat-label">Total Teachers</div>
+            </div>
+            <div className="stat-card">
               <div className="stat-number">{totalSessions}</div>
               <div className="stat-label">Total Sessions</div>
             </div>

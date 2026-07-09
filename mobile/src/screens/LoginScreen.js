@@ -26,6 +26,10 @@ export default function LoginScreen() {
         password: form.password,
       });
       console.log('Login success:', res.data);
+      if (res.data.user.role !== 'student') {
+        Alert.alert('Access Denied', 'This app is for students only. Please use the web portal.');
+        return;
+      }
       await login(res.data.user, res.data.token);
     } catch (err) {
       console.log('Login error:', err.message, err.code, err.response?.status);

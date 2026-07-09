@@ -64,7 +64,7 @@ export default function AppNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {user
+        {user && user.role === 'student'
           ? <Stack.Screen name="Main"  component={MainTabs} />
           : <Stack.Screen name="Login" component={LoginScreen} />
         }
