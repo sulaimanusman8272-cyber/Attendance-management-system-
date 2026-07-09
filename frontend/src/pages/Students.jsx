@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
+import CustomSelect from '../components/CustomSelect';
 
 export default function Students() {
   const { user } = useAuth();
@@ -127,18 +128,15 @@ export default function Students() {
             <form onSubmit={handleRegister}>
               <div className="form-group">
                 <label>Role</label>
-                <select
+                <CustomSelect
                   value={regForm.role}
                   onChange={e => setRegForm({ ...regForm, role: e.target.value })}
-                  style={{
-                    width: '100%', padding: '10px 14px', border: '1.5px solid #009688',
-                    borderRadius: 10, fontSize: 14, color: '#fff',
-                    background: '#009688', cursor: 'pointer', fontWeight: 600
-                  }}
-                >
-                  <option value="student" style={{ background: '#fff', color: '#263238' }}>Student</option>
-                  <option value="teacher" style={{ background: '#fff', color: '#263238' }}>Teacher</option>
-                </select>
+                  options={[
+                    { value: 'student', label: 'Student' },
+                    { value: 'teacher', label: 'Teacher' },
+                  ]}
+                  placeholder="-- Select Role --"
+                />
               </div>
               <div className="form-group">
                 <label>Full Name</label>
